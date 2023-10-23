@@ -1,13 +1,14 @@
-import { SetMetadata } from '@nestjs/common';
 import { SlashCommandDiscovery, SlashCommandMeta } from '../slash-command.discovery';
-import { SLASH_COMMAND_METADATA } from '../../../necord.constants';
 import { ApplicationCommandType } from 'discord.js';
+import { Reflector } from '@nestjs/core';
 
-export const SlashCommand = (options: Omit<SlashCommandMeta, 'type'>): MethodDecorator =>
-	SetMetadata<string, SlashCommandDiscovery>(
-		SLASH_COMMAND_METADATA,
+export const SlashCommand = Reflector.createDecorator<
+	Omit<SlashCommandMeta, 'type' | 'options'>,
+	SlashCommandDiscovery
+>({
+	transform: options =>
 		new SlashCommandDiscovery({
 			type: ApplicationCommandType.ChatInput,
 			...options
 		})
-	);
+});

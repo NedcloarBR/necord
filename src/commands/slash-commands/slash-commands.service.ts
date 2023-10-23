@@ -1,72 +1,50 @@
-import { Injectable, OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, Scope } from '@nestjs/common';
 import { SlashCommandDiscovery } from './slash-command.discovery';
-import { Client, InteractionType } from 'discord.js';
-import {
-	SLASH_COMMAND_METADATA,
-	SUBCOMMAND_GROUP_METADATA,
-	SUBCOMMAND_METADATA
-} from '../../necord.constants';
-import { ExplorerService } from '../../necord-explorer.service';
-import { CommandDiscovery } from '../command.discovery';
+import { Collection } from 'discord.js';
 import { Reflector } from '@nestjs/core';
+import { SlashCommand, SubcommandGroup } from './decorators';
 
-@Injectable()
-export class SlashCommandsService implements OnModuleInit, OnApplicationBootstrap {
-	private readonly slashCommands = new Map<string, SlashCommandDiscovery>();
+@Injectable({ scope: Scope.DEFAULT, durable: true })
+export class SlashCommandsService {
+	private readonly logger = new Logger(SlashCommandsService.name);
 
-	public constructor(
-		private readonly client: Client,
-		private readonly explorerService: ExplorerService<SlashCommandDiscovery>,
-		private readonly reflector: Reflector
-	) {}
+	public readonly cache = new Collection<string, SlashCommandDiscovery>();
 
-	public async onModuleInit() {
-		this.explorerService
-			.explore(SLASH_COMMAND_METADATA)
-			.forEach(command => this.slashCommands.set(command.getName(), command));
+	public constructor(private readonly reflector: Reflector) {}
 
-		return this.explorerService.explore(SUBCOMMAND_METADATA).forEach(subcommand => {
-			const rootCommand = this.reflector.get<SlashCommandDiscovery>(
-				SLASH_COMMAND_METADATA,
-				subcommand.getClass()
-			);
-			const subCommandGroup = this.reflector.get<SlashCommandDiscovery>(
-				SUBCOMMAND_GROUP_METADATA,
-				subcommand.getClass()
-			);
+	public add(command: SlashCommandDiscovery): void {
+		if (this.cache.has(command.getName())) {
+			this.logger.warn(`Slash Command : ${command.getName()} already exists`);
+		}
 
-			if (!rootCommand) {
-				throw new ReferenceError(
-					`can't register subcommand "${subcommand.getName()}" w/o root command`
-				);
-			}
-
-			if (subCommandGroup) {
-				subCommandGroup.setCommand(subcommand);
-				rootCommand.setCommand(subCommandGroup);
-			} else {
-				rootCommand.setCommand(subcommand);
-			}
-
-			if (!this.slashCommands.has(rootCommand.getName())) {
-				this.slashCommands.set(rootCommand.getName(), rootCommand);
-			}
-		});
+		this.cache.set(command.getName(), command);
 	}
 
-	public onApplicationBootstrap() {
-		return this.client.on('interactionCreate', i => {
-			if (
-				!i.isChatInputCommand() &&
-				i.type !== InteractionType.ApplicationCommandAutocomplete
-			)
-				return;
-
-			return this.slashCommands.get(i.commandName)?.execute(i);
-		});
+	public get(commandName: string): SlashCommandDiscovery {
+		return this.cache.get(commandName);
 	}
 
-	public getCommands(): CommandDiscovery[] {
-		return [...this.slashCommands.values()];
+	public remove(commandName: string): boolean {
+		return this.cache.delete(commandName);
+	}
+
+	public addSubCommand(subCommand: SlashCommandDiscovery): void {
+		let rootCommand = this.reflector.get<SlashCommandDiscovery>(
+			SlashCommand.KEY,
+			subCommand.getClass()
+		);
+		let subCommandGroup = this.reflector.get<SlashCommandDiscovery>(
+			SubcommandGroup.KEY,
+			subCommand.getClass()
+		);
+
+		rootCommand = this.cache.ensure(rootCommand.getName(), () => rootCommand);
+
+		if (subCommandGroup) {
+			subCommandGroup = rootCommand.ensureSubcommand(subCommandGroup);
+			subCommandGroup.ensureSubcommand(subCommand);
+		} else {
+			rootCommand.ensureSubcommand(subCommand);
+		}
 	}
 }

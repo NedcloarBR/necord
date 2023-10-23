@@ -4,19 +4,21 @@ import {
 	AutocompleteInteraction,
 	ChatInputApplicationCommandData,
 	ChatInputCommandInteraction,
-	CommandInteractionOptionResolver
+	Collection,
+	CommandInteractionOptionResolver,
+	Snowflake
 } from 'discord.js';
-import { OPTIONS_METADATA } from '../../necord.constants';
 import { APIApplicationCommandOptionBase } from 'discord-api-types/payloads/v10/_interactions/_applicationCommands/_chatInput/base';
 import { CommandDiscovery } from '../command.discovery';
+import { OPTIONS_METADATA } from './options';
 
-// TODO: Separate to SlashCommandDiscovery, SubcommandGroupDiscovery, SubcommandDiscovery
 // @ts-ignore
 export interface SlashCommandMeta extends ChatInputApplicationCommandData {
 	type?:
 		| ApplicationCommandType.ChatInput
 		| ApplicationCommandOptionType.SubcommandGroup
 		| ApplicationCommandOptionType.Subcommand;
+	guilds?: Snowflake[];
 }
 
 export interface OptionMeta extends APIApplicationCommandOptionBase<any> {
@@ -24,14 +26,26 @@ export interface OptionMeta extends APIApplicationCommandOptionBase<any> {
 }
 
 export class SlashCommandDiscovery extends CommandDiscovery<SlashCommandMeta> {
-	private readonly subcommands = new Map<string, SlashCommandDiscovery>();
+	private readonly subcommands = new Collection<string, SlashCommandDiscovery>();
 
 	public getDescription() {
 		return this.meta.description;
 	}
 
-	public setCommand(command: SlashCommandDiscovery) {
+	public setSubcommand(command: SlashCommandDiscovery) {
 		this.subcommands.set(command.getName(), command);
+	}
+
+	public ensureSubcommand(command: SlashCommandDiscovery) {
+		return this.subcommands.ensure(command.getName(), () => command);
+	}
+
+	public getSubcommand(name: string) {
+		return this.subcommands.get(name);
+	}
+
+	public getSubcommands() {
+		return this.subcommands;
 	}
 
 	public getRawOptions(): Record<string, OptionMeta> {

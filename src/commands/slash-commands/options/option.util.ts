@@ -2,7 +2,8 @@ import { APIApplicationCommandOptionBase } from 'discord-api-types/payloads/v10/
 import { ApplicationCommandOptionType } from 'discord.js';
 import { OptionMeta } from '../slash-command.discovery';
 import { DistributiveOmit } from 'discord-api-types/utils/internals';
-import { OPTIONS_METADATA } from '../../../necord.constants';
+
+export const OPTIONS_METADATA = 'necord:options_meta';
 
 export function createOptionDecorator<T extends APIApplicationCommandOptionBase<any>>(
 	type: ApplicationCommandOptionType,
@@ -12,19 +13,22 @@ export function createOptionDecorator<T extends APIApplicationCommandOptionBase<
 	// @ts-ignore
 	return (data: DistributiveOmit<T, 'type'>): PropertyDecorator => {
 		return (target: any, propertyKey: string | symbol) => {
-			Reflect.defineProperty(target, propertyKey, {
-				value: undefined,
-				writable: true,
-				configurable: true
-			});
+			let metadata: Record<string, OptionMeta> = Reflect.getOwnMetadata(
+				OPTIONS_METADATA,
+				target
+			);
 
-			const meta: OptionMeta = {
+			if (!metadata) {
+				metadata = {};
+			}
+
+			metadata[String(propertyKey)] = {
 				...data,
 				type,
 				resolver
 			};
 
-			Reflect.defineMetadata(OPTIONS_METADATA, meta, target, propertyKey);
+			Reflect.defineMetadata(OPTIONS_METADATA, metadata, target);
 		};
 	};
 }

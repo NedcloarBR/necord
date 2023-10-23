@@ -1,37 +1,41 @@
-import { Injectable, OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
-import { Client, InteractionType } from 'discord.js';
-import { ExplorerService } from '../necord-explorer.service';
-import { MessageComponentDiscovery } from './message-component.discovery';
-import { MESSAGE_COMPONENT_METADATA } from '../necord.constants';
+import { Injectable, Logger } from '@nestjs/common';
+import { Collection } from 'discord.js';
+import { MessageComponentDiscovery, MessageComponentMeta } from './message-component.discovery';
 
-// TODO: Support path-to-regexp https://github.com/necordjs/necord/issues/279
 @Injectable()
-export class MessageComponentsService implements OnModuleInit, OnApplicationBootstrap {
-	private readonly componentsMap = new Map<string, MessageComponentDiscovery>();
+export class MessageComponentsService {
+	private readonly logger = new Logger(MessageComponentsService.name);
 
-	public constructor(
-		private readonly client: Client,
-		private readonly explorerService: ExplorerService<MessageComponentDiscovery>
-	) {}
+	public readonly cache = new Collection<string, MessageComponentDiscovery>();
 
-	public onModuleInit() {
-		return this.explorerService
-			.explore(MESSAGE_COMPONENT_METADATA)
-			.forEach(component =>
-				this.componentsMap.set(
-					[component.getType(), component.getCustomId()].join(':'),
-					component
-				)
-			);
+	private componentName(
+		type: MessageComponentMeta['type'],
+		customId: MessageComponentMeta['customId']
+	): string {
+		return [type, customId].join('_');
 	}
 
-	public onApplicationBootstrap() {
-		return this.client.on('interactionCreate', interaction => {
-			if (interaction.type !== InteractionType.MessageComponent) return;
+	public add(component: MessageComponentDiscovery) {
+		const name = this.componentName(component.getType(), component.getCustomId());
 
-			return this.componentsMap
-				.get([interaction.componentType, interaction.customId].join(':'))
-				?.execute(interaction);
-		});
+		if (this.cache.has(name)) {
+			this.logger.warn(`Message Component : ${name} already exists`);
+		}
+
+		this.cache.set(name, component);
+	}
+
+	public get(type: MessageComponentMeta['type'], customId: MessageComponentMeta['customId']) {
+		for (const component of this.cache.values()) {
+			if (component.matcher(this.componentName(type, customId))) {
+				return component;
+			}
+		}
+
+		return null;
+	}
+
+	public remove(type: MessageComponentMeta['type'], customId: MessageComponentMeta['customId']) {
+		this.cache.delete(this.componentName(type, customId));
 	}
 }

@@ -1,14 +1,18 @@
 import {
 	AutocompleteInteraction,
 	ButtonInteraction,
+	ChannelSelectMenuInteraction,
 	ChatInputCommandInteraction,
+	MentionableSelectMenuInteraction,
 	Message,
 	MessageContextMenuCommandInteraction,
 	ModalSubmitInteraction,
-	SelectMenuInteraction,
-	UserContextMenuCommandInteraction
+	RoleSelectMenuInteraction,
+	StringSelectMenuInteraction,
+	UserContextMenuCommandInteraction,
+	UserSelectMenuInteraction
 } from 'discord.js';
-import { NecordEvents } from '../listeners/listener.interface';
+import { NecordEvents } from '../listeners';
 
 export type AutocompleteContext = [AutocompleteInteraction];
 
@@ -24,6 +28,14 @@ export type ModalContext = [ModalSubmitInteraction];
 
 export type ButtonContext = [ButtonInteraction];
 
-export type SelectMenuContext = [SelectMenuInteraction];
+export type StringSelectContext = [StringSelectMenuInteraction];
+
+export type ChannelSelectContext = [ChannelSelectMenuInteraction];
+
+export type RoleSelectContext = [RoleSelectMenuInteraction];
+
+export type UserSelectContext = [UserSelectMenuInteraction];
+
+export type MentionableSelectContext = [MentionableSelectMenuInteraction];
 
 export type ContextOf<K extends keyof E, E = NecordEvents> = E[K];

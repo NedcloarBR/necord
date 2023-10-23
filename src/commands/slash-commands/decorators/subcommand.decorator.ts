@@ -1,13 +1,14 @@
-import { SetMetadata } from '@nestjs/common';
 import { SlashCommandDiscovery, SlashCommandMeta } from '../slash-command.discovery';
-import { SUBCOMMAND_METADATA } from '../../../necord.constants';
 import { ApplicationCommandOptionType } from 'discord.js';
+import { Reflector } from '@nestjs/core';
 
-export const Subcommand = (options: Omit<SlashCommandMeta, 'type'>): MethodDecorator =>
-	SetMetadata<string, SlashCommandDiscovery>(
-		SUBCOMMAND_METADATA,
+export const Subcommand = Reflector.createDecorator<
+	Omit<SlashCommandMeta, 'type' | 'options' | 'guilds' | 'defaultMemberPermissions'>,
+	SlashCommandDiscovery
+>({
+	transform: options =>
 		new SlashCommandDiscovery({
 			type: ApplicationCommandOptionType.Subcommand,
 			...options
 		})
-	);
+});

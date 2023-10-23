@@ -1,29 +1,15 @@
-import { Injectable, OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
-import { ListenerDiscovery } from './listener.discovery';
-import { Client, GuildChannel, Role } from 'discord.js';
-import { LISTENERS_METADATA } from '../necord.constants';
-import { ExplorerService } from '../necord-explorer.service';
-import { NecordEvents } from './listener.interface';
+import { AuditLogEvent, Client, GuildAuditLogsEntry, GuildChannel, Role } from 'discord.js';
+import { Injectable } from '@nestjs/common';
+
 import { ContextOf } from '../context';
+import { NecordEvents } from './listener.interface';
 
+// Oh... fuck, it looks really shitty
 @Injectable()
-export class ListenersService implements OnModuleInit, OnApplicationBootstrap {
-	public constructor(
-		private readonly client: Client,
-		private readonly explorerService: ExplorerService<ListenerDiscovery>
-	) {}
+export class ListenersService {
+	public constructor(private readonly client: Client) {}
 
-	public onModuleInit() {
-		return this.explorerService
-			.explore(LISTENERS_METADATA)
-			.forEach(listener =>
-				this.client[listener.getType()](listener.getEvent(), (...args) =>
-					listener.execute(args)
-				)
-			);
-	}
-
-	public onApplicationBootstrap() {
+	private onApplicationBootstrap() {
 		this.on('channelUpdate', this.onChannelUpdate);
 		this.on('guildMemberUpdate', this.onGuildMemberUpdate);
 		this.on('guildUpdate', this.onGuildUpdate);
@@ -33,6 +19,7 @@ export class ListenersService implements OnModuleInit, OnApplicationBootstrap {
 		this.on('threadUpdate', this.onThreadUpdate);
 		this.on('userUpdate', this.onUserUpdate);
 		this.on('voiceStateUpdate', this.onVoiceStateUpdate);
+		this.on('guildAuditLogEntryCreate', this.onGuildAuditLogEntryCreate);
 	}
 
 	private on<K extends keyof NecordEvents>(event: K, fn: (args: NecordEvents[K]) => void) {
@@ -344,6 +331,60 @@ export class ListenersService implements OnModuleInit, OnApplicationBootstrap {
 
 		if (oldState.streaming && !newState.streaming) {
 			this.emit('voiceStreamingStop', newMember, newState.channel);
+		}
+	}
+
+	private onGuildAuditLogEntryCreate([
+		auditLogEntry,
+		guild
+	]: ContextOf<'guildAuditLogEntryCreate'>) {
+		const { actionType, targetType } = auditLogEntry;
+
+		switch (actionType) {
+			case 'Create': {
+				this.emit('guildAuditLogEntryAdd', auditLogEntry, guild);
+
+				if (targetType === 'Webhook') {
+					this.emit(
+						'guildAuditLogEntryWebhookCreate',
+						auditLogEntry as GuildAuditLogsEntry<AuditLogEvent.WebhookCreate>,
+						guild
+					);
+				}
+
+				break;
+			}
+
+			case 'Update': {
+				this.emit('guildAuditLogEntryUpdate', auditLogEntry, guild);
+
+				if (targetType === 'Webhook') {
+					this.emit(
+						'guildAuditLogEntryWebhookUpdate',
+						auditLogEntry as GuildAuditLogsEntry<AuditLogEvent.WebhookUpdate>,
+						guild
+					);
+				}
+
+				break;
+			}
+
+			case 'Delete': {
+				this.emit('guildAuditLogEntryDelete', auditLogEntry, guild);
+
+				if (targetType === 'Webhook') {
+					this.emit(
+						'guildAuditLogEntryWebhookDelete',
+						auditLogEntry as GuildAuditLogsEntry<AuditLogEvent.WebhookDelete>,
+						guild
+					);
+				}
+
+				break;
+			}
+
+			default:
+				break;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { NecordExecutionContext, SlashCommandContext } from '../../../context';
-import { OPTIONS_METADATA } from '../../../necord.constants';
+import { OPTIONS_METADATA } from './option.util';
 
 export const Options = createParamDecorator(
 	(_, context: ExecutionContext) => {
@@ -27,10 +27,9 @@ export const Options = createParamDecorator(
 			const options = {};
 
 			do {
-				Object.getOwnPropertyNames(prototype)
-					.map(name => [name, Reflect.getMetadata(OPTIONS_METADATA, prototype, name)])
-					.filter(([, meta]) => !!meta)
-					.forEach(([name, meta]) => (options[name] ??= meta));
+				const metadata = Reflect.getOwnMetadata(OPTIONS_METADATA, prototype);
+
+				Object.assign(options, metadata);
 			} while (
 				(prototype = Reflect.getPrototypeOf(prototype)) &&
 				prototype !== Object.prototype

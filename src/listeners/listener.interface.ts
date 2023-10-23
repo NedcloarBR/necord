@@ -1,7 +1,9 @@
 import {
+	AuditLogEvent,
 	ClientEvents,
 	DMChannel,
 	Guild,
+	GuildAuditLogsEntry,
 	GuildFeature,
 	GuildMember,
 	GuildPremiumTier,
@@ -20,14 +22,14 @@ import {
 } from 'discord.js';
 
 export interface NecordEvents extends ClientEvents {
-	// ChannelUpdate
+	// Channel Update
 	guildChannelPermissionsUpdate: [
 		channel: DMChannel | NonThreadGuildBasedChannel,
 		oldPermissions: PermissionOverwriteManager,
 		newPermissions: PermissionOverwriteManager
 	];
 
-	// GuildMemberUpdate
+	// Guild Member Update
 	guildMemberBoost: [member: GuildMember];
 	guildMemberUnboost: [member: GuildMember];
 	guildMemberRoleAdd: [member: GuildMember, role: Role];
@@ -38,7 +40,7 @@ export interface NecordEvents extends ClientEvents {
 	guildMemberAvatarUpdate: [member: GuildMember, oldAvatarURL: string, newAvatarURL: string];
 	guildMemberAvatarRemove: [member: GuildMember, oldAvatarURL: string];
 
-	// GuildUpdate
+	// Guild Update
 	guildBoostLevelUp: [
 		guild: Guild,
 		oldPremiumTier: GuildPremiumTier,
@@ -62,19 +64,19 @@ export interface NecordEvents extends ClientEvents {
 	guildVerificationAdd: [guild: Guild];
 	guildVerificationRemove: [guild: Guild];
 
-	// MessageUpdate
-	messagePinned: [Message<boolean> | PartialMessage];
+	// Message Update
+	messagePinned: [Message | PartialMessage];
 	messageContentEdited: [
-		message: Message<boolean> | PartialMessage,
+		message: Message | PartialMessage,
 		oldContent: string,
 		newContent: string
 	];
 
-	// PresenceUpdate
+	// Presence Update
 	guildMemberOffline: [member: GuildMember, oldStatus: PresenceStatus];
 	guildMemberOnline: [member: GuildMember, newStatus: PresenceStatus];
 
-	// RoleUpdate
+	// Role Update
 	rolePositionUpdate: [role: Role, oldPosition: number, newPosition: number];
 	rolePermissionsUpdate: [
 		role: Role,
@@ -124,4 +126,22 @@ export interface NecordEvents extends ClientEvents {
 	voiceChannelUndeaf: [member: GuildMember, type: 'self-deafed' | 'server-deafed'];
 	voiceStreamingStart: [member: GuildMember, channel: VoiceBasedChannel];
 	voiceStreamingStop: [member: GuildMember, channel: VoiceBasedChannel];
+
+	// Guild Audit Log Entry Create
+	guildAuditLogEntryAdd: [auditLogEntry: GuildAuditLogsEntry, guild: Guild];
+	guildAuditLogEntryUpdate: [auditLogEntry: GuildAuditLogsEntry, guild: Guild];
+	guildAuditLogEntryDelete: [auditLogEntry: GuildAuditLogsEntry, guild: Guild];
+
+	guildAuditLogEntryWebhookCreate: [
+		auditLogEntry: GuildAuditLogsEntry<AuditLogEvent.WebhookCreate>,
+		guild: Guild
+	];
+	guildAuditLogEntryWebhookUpdate: [
+		auditLogEntry: GuildAuditLogsEntry<AuditLogEvent.WebhookUpdate>,
+		guild: Guild
+	];
+	guildAuditLogEntryWebhookDelete: [
+		auditLogEntry: GuildAuditLogsEntry<AuditLogEvent.WebhookDelete>,
+		guild: Guild
+	];
 }

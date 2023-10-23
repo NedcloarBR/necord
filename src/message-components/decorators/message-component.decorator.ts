@@ -1,9 +1,9 @@
 import { MessageComponentDiscovery, MessageComponentMeta } from '../message-component.discovery';
-import { SetMetadata } from '@nestjs/common';
-import { MESSAGE_COMPONENT_METADATA } from '../../necord.constants';
+import { Reflector } from '@nestjs/core';
 
-export const MessageComponent = (options: MessageComponentMeta) =>
-	SetMetadata<string, MessageComponentDiscovery>(
-		MESSAGE_COMPONENT_METADATA,
-		new MessageComponentDiscovery(options)
-	);
+export const MessageComponent = Reflector.createDecorator<
+	MessageComponentMeta,
+	MessageComponentDiscovery
+>({
+	transform: options => new MessageComponentDiscovery(options)
+});

@@ -8,6 +8,14 @@
 </div>
 
 
+<br/>
+
+<p align="center">
+    <a href='https://img.shields.io/npm/v/necord'><img src="https://img.shields.io/npm/v/necord" alt="NPM Version" /></a>
+    <a href='https://img.shields.io/npm/l/necord'><img src="https://img.shields.io/npm/l/necord" alt="NPM License" /></a>
+    <a href='https://img.shields.io/npm/dm/necord'><img src="https://img.shields.io/npm/dm/necord" alt="NPM Downloads" /></a>
+    <a href='https://img.shields.io/github/last-commit/necordjs/necord'><img src="https://img.shields.io/github/last-commit/SocketSomeone/necord" alt="Last commit" /></a>
+</p>
 
 
 ## About
@@ -43,13 +51,12 @@ Once the installation process is complete, we can import the `NecordModule` into
 ```typescript
 import { NecordModule } from 'necord';
 import { Module } from '@nestjs/common';
-import { Intents } from 'discord.js';
 
 @Module({
     imports: [
         NecordModule.forRoot({
             token: 'DISCORD_BOT_TOKEN',
-            intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.DIRECT_MESSAGES]
+            intents: ['Guilds', 'GuildMessages', 'DirectMessages']
         })
     ],
     providers: []
@@ -92,6 +99,10 @@ If you want to fully dive into Necord check out these resources:
 * [Nest JS](https://docs.nestjs.com) - A progressive framework for creating well-architectured applications.
 * [Discord JS](https://discord.js.org) - The most powerful library for creating bots.
 * [Discord API](https://discord.com/developers/docs) - Official documentation of Discord API.
+
+## Backers
+
+<a href="https://opencollective.com/necord" target="_blank"><img src="https://opencollective.com/necord/backers.svg?width=1000"></a>
 
 ## Stay in touch
 
